@@ -1,1 +1,141 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TLL Repaired Animation Viewer</title><style>body{background:#101826;color:#e9f3ff;font:16px system-ui;padding:2rem;max-width:650px;margin:auto}progress{width:100%}</style></head><body><h1>🦴 TLL Animation Viewer</h1><p id="status">Loading the original artwork and animation rigs…</p><progress id="progress" max="25" value="0"></progress><script>(async()=>{try{const urls=Array.from({length:25},(_,i)=>"tll/parts/part-"+String(i).padStart(3,"0")+".txt");const chunks=[];for(let i=0;i<urls.length;i++){const response=await fetch(urls[i]);if(!response.ok)throw new Error(urls[i]+": HTTP "+response.status);chunks.push(await response.text());document.getElementById("progress").value=i+1;document.getElementById("status").textContent="Loading animation data: "+(i+1)+"/25";}const html=chunks.join("");document.open();document.write(html);document.close();}catch(e){document.getElementById("status").textContent="Couldn't load viewer: "+e.message;console.error(e);}})();</script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>The Lost Landscapes — Recovered Animation Viewer</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1220;--panel:#151e2e;--text:#eaf1ff;--quiet:#9eb0d0;--accent:#67dbb5;--border:#344560}*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% 0,#1c3551,var(--bg) 65%);font:15px system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--text)}
+main{width:min(1150px,96vw);margin:auto;padding:24px 0 34px}header{margin-bottom:18px}h1{font-size:clamp(22px,4vw,32px);margin:5px 0 6px;letter-spacing:-.02em}header p{color:var(--quiet);margin:8px 0;line-height:1.5}.tag{display:inline-block;padding:5px 9px;color:var(--accent);border:1px solid #326b63;border-radius:9px;font-size:12px;font-weight:700;letter-spacing:.04em}
+section{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}#stage{width:100%;aspect-ratio:1;max-height:740px;border:1px solid var(--border);border-radius:20px;background:#111c2e;display:block}aside{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:15px}.panel h2{font-size:15px;margin:0 0 12px}.panel p{font-size:13px;color:var(--quiet);line-height:1.5}label{display:block;margin:10px 0 5px;color:#b9c6de;font-size:13px;font-weight:600}select,button,input[type=range]{width:100%;font:inherit}select{padding:11px;background:#0c1422;border:1px solid #455671;border-radius:9px;color:#fff}button{background:#25485a;border:1px solid #47748a;border-radius:10px;padding:10px;color:#f4faff;font-weight:700;cursor:pointer}button:hover{background:#346477}button.primary{background:#1e7b62;border-color:#48aa8e}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.muted{color:var(--quiet);font-size:12px}.value{font-variant-numeric:tabular-nums}input[type=range]{accent-color:var(--accent)}.note{color:#9aaed2;font-size:13px;line-height:1.55}.features{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.features span{padding:4px 8px;background:#223146;border:1px solid #33455e;border-radius:8px;color:#ccdaeb;font-size:12px}
+@media(max-width:800px){section{grid-template-columns:1fr}aside{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#stage{max-height:none}}@media(max-width:550px){aside{display:flex}main{width:95vw;padding-top:14px}.panel{padding:12px}}
+</style></head>
+<body><main><header><span class="tag">RECOVERED UNITY + SPINE 3.8</span><h1>🏝️ The Lost Landscapes · Animation Viewer</h1><p>Original art and skeleton keyframes from the leaked development build. Select a monster and an animation to view the recovered motion directly—no game installation required.</p></header>
+<section><div><canvas id="stage" width="680" height="680" aria-label="Animated monster stage"></canvas><div class="features"><span>Original textures</span><span>Actual Spine keyframes</span><span>Offline</span><span>Full timelines</span><span>8 monsters</span><span>Mesh opacity repaired</span><span>Costume skins</span></div></div>
+<aside><div class="panel"><h2>🎭 Character & animation</h2><label for="monster">Monster</label><select id="monster"></select><label for="animation">Animation</label><select id="animation"></select><div id="skin-panel" hidden><label for="skin-select">Costume / skin</label><select id="skin-select"></select></div><p id="metadata" class="muted"></p></div>
+<div class="panel"><h2>⏯️ Playback</h2><div class="two"><button class="primary" id="toggle">Pause</button><button id="restart">Restart</button></div><label for="seek">Timeline</label><input id="seek" type="range" min="0" max="1" step="0.001" value="0"><div class="row"><small id="clock" class="muted value">0.00s / 0.00s</small><small class="muted">Drag to scrub</small></div><label for="speed">Speed <span id="speed-label">1.0×</span></label><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"><div class="two" style="margin-top:12px"><button id="step">+ 1 frame</button><button id="screenshot">Save frame</button></div></div>
+<div class="panel"><h2>🔬 Recovery notes</h2><p>The animations play for their actual recovered keyframe durations, including idle, singing, sleeping, and some experimental sequences.</p><p>This experimental custom viewer supports regions, weighted meshes, deformation, costume skins, and bone transformations. Spine IK, specialized transform inheritance, advanced constraints, event-driven sound, clipping and some easing curves are approximated or not implemented, so results can differ from Unity playback.</p><p>Everything is embedded in this HTML. It doesn't contact a game server or use any third-party JavaScript.</p></div></aside></section></main>
+<script>
+let LIBRARY = {};
+const stage=document.getElementById('stage'),ctx=stage.getContext('2d');let mon='Reedling',anim='Idle',t=0,playing=true,speed=1,last=performance.now();let loaded={},parts=new Map(),chosenSkin='default';
+const SEL={monster:document.getElementById('monster'),animation:document.getElementById('animation'),seek:document.getElementById('seek'),speed:document.getElementById('speed'),skin:document.getElementById('skin-select')};
+function init(){for(const name of Object.keys(LIBRARY)){const opt=document.createElement('option');opt.textContent=name;opt.value=name;SEL.monster.add(opt);const im=new Image();im.src=LIBRARY[name].texture;loaded[name]=im;}SEL.monster.value=mon;chooseMonster();requestAnimationFrame(loop)}
+function chooseMonster(){mon=SEL.monster.value;parts.clear();SEL.animation.innerHTML='';const a=LIBRARY[mon].animations;for(const name of Object.keys(a)){const opt=document.createElement('option');opt.value=name;opt.textContent=name+' ('+a[name].toFixed(2)+'s)';SEL.animation.add(opt);}anim=a.Idle!==undefined?'Idle':Object.keys(a)[0];SEL.animation.value=anim;
+const skins=LIBRARY[mon].spine.skins||[];SEL.skin.innerHTML='';
+for(const sk of skins){const opt=document.createElement('option');opt.value=sk.name;opt.textContent=sk.name;SEL.skin.add(opt);}
+const defaults=skins.filter(k=>k.name!=='default');chosenSkin=defaults.length?defaults[0].name:'default';SEL.skin.value=chosenSkin;
+document.getElementById('skin-panel').hidden=skins.length<2;t=0;showMeta();}
+function showMeta(){let d=LIBRARY[mon];document.getElementById('metadata').textContent=d.spine.bones.length+' bones · '+d.spine.slots.length+' slots · '+Object.keys(d.animations).length+' animations';}
+function span(){return Math.max(.1,LIBRARY[mon].animations[anim]||1)}
+SEL.skin.onchange=()=>{chosenSkin=SEL.skin.value;parts.clear()};SEL.monster.onchange=chooseMonster;SEL.animation.onchange=()=>{anim=SEL.animation.value;t=0;showMeta()};SEL.speed.oninput=()=>{speed=parseFloat(SEL.speed.value);document.getElementById('speed-label').textContent=speed.toFixed(2)+'×'};
+const toggle=document.getElementById('toggle');toggle.onclick=()=>{playing=!playing;toggle.textContent=playing?'Pause':'Play'};document.getElementById('restart').onclick=()=>t=0;document.getElementById('step').onclick=()=>{playing=false;toggle.textContent='Play';t=(t+1/30)%span()};
+SEL.seek.oninput=()=>{t=parseFloat(SEL.seek.value)*span();playing=false;toggle.textContent='Play'};
+document.getElementById('screenshot').onclick=()=>{const a=document.createElement('a');a.href=stage.toDataURL('image/png');a.download='TLL_'+mon+'_'+anim+'_'+t.toFixed(2)+'.png';a.click()};
+function point(keys,frame,def){return keys.map((k,i)=>frame?.[k] ?? def[i]);}
+function interpolate(keyframes,time,keys,def,angular=false){if(!keyframes||!keyframes.length||time<(keyframes[0].time||0))return def;if(keyframes.length===1||time>=(keyframes[keyframes.length-1].time||0))return point(keys,keyframes[keyframes.length-1],def);let ix=0;while(ix+1<keyframes.length-1&&time>=(keyframes[ix+1].time||0))ix++;const a=keyframes[ix],b=keyframes[ix+1];let f=(time-(a.time||0))/Math.max(.00001,(b.time||0)-(a.time||0));if(a.curve==='stepped')f=0;return keys.map((key,i)=>{let va=a[key]??def[i],vb=b[key]??def[i];if(angular&&key==='angle')vb=va+((vb-va+540)%360)-180;return va+(vb-va)*f})}
+function matrices(a,b){return [a[0]*b[0]+a[1]*b[2],a[0]*b[1]+a[1]*b[3],a[2]*b[0]+a[3]*b[2],a[2]*b[1]+a[3]*b[3]]}function mv(m,v){return [m[0]*v[0]+m[1]*v[1],m[2]*v[0]+m[3]*v[1]]}
+function world(d,anim,t){let result={};const changes=d.animations[anim].bones||{};for(const b of d.bones){let v=changes[b.name]||{};let rot=interpolate(v.rotate,t,['angle'],[0],true)[0],tr=interpolate(v.translate,t,['x','y'],[0,0]),ss=interpolate(v.scale,t,['x','y'],[1,1]);const r=(b.rotation||0)+rot,sh=interpolate(v.shear,t,['x','y'],[0,0]);
+const rx=(r+(b.shearX||0)+sh[0])*Math.PI/180,ry=(r+90+(b.shearY||0)+sh[1])*Math.PI/180;
+const sx=(b.scaleX??1)*ss[0],sy=(b.scaleY??1)*ss[1];
+const local=[Math.cos(rx)*sx,Math.cos(ry)*sy,Math.sin(rx)*sx,Math.sin(ry)*sy];let pos=[(b.x||0)+tr[0],(b.y||0)+tr[1]],mat=local;if(b.parent&&result[b.parent]){const p=result[b.parent];let delta=mv(p.mat,pos);pos=[p.pos[0]+delta[0],p.pos[1]+delta[1]];mat=matrices(p.mat,local);}result[b.name]={pos,mat};}return result}
+function partFor(name,region){const key=name+'/'+region;if(parts.has(key))return parts.get(key);const entry=LIBRARY[name],r=entry.regions[region],img=loaded[name];if(!r||!img.complete||!img.naturalWidth)return null;
+const orig=r.orig||r.size,off=r.offset||[0,0],w=r.size[0],h=r.size[1],rot=r.rotate;const pw=rot?h:w,ph=rot?w:h,ax=entry.atlasSize[0],ay=entry.atlasSize[1];const x=r.xy[0],y=r.xy[1];const x0=Math.round(x*img.width/ax),y0=Math.round(y*img.height/ay),x1=Math.round((x+pw)*img.width/ax),y1=Math.round((y+ph)*img.height/ay);
+const piece=document.createElement('canvas');piece.width=w;piece.height=h;const pc=piece.getContext('2d');if(rot){pc.translate(0,h);pc.rotate(-Math.PI/2);pc.drawImage(img,x0,y0,x1-x0,y1-y0,0,0,h,w)}else pc.drawImage(img,x0,y0,x1-x0,y1-y0,0,0,w,h);
+const full=document.createElement('canvas');full.width=orig[0];full.height=orig[1];full.getContext('2d').drawImage(piece,off[0],orig[1]-off[1]-h);parts.set(key,full);return full;}
+function slotAttachment(ch,t,defaultName){let curr=defaultName;for(const f of ch?.attachment||[]){if((f.time||0)>t)break;curr=f.name;}return curr}
+
+function meshPoints(att,slotBone,bones,deform){
+ const uv=att.uvs||[], verts=att.vertices||[], count=uv.length/2, out=[];
+ if(verts.length===count*2){
+   for(let i=0;i<count;i++){
+     const x=verts[2*i]+(deform[2*i]||0),y=verts[2*i+1]+(deform[2*i+1]||0);
+     const p=mv(slotBone.mat,[x,y]);out.push([slotBone.pos[0]+p[0],slotBone.pos[1]+p[1]]);
+   }
+ }else{
+   let at=0,di=0;
+   for(let i=0;i<count;i++){
+     const influences=verts[at++]|0;let x=0,y=0;
+     for(let j=0;j<influences;j++){
+       const bi=verts[at++]|0, vx=verts[at++]+(deform[di++]||0),vy=verts[at++]+(deform[di++]||0),w=verts[at++];
+       const bn=bones[window.__boneNames[bi]];
+       if(bn){const p=mv(bn.mat,[vx,vy]);x+=(bn.pos[0]+p[0])*w;y+=(bn.pos[1]+p[1])*w;}
+     }
+     out.push([x,y]);
+   }
+ }
+ return out;
+}
+function meshDeform(anim,skinName,slotName,attachmentName,time){
+ const keys=anim.deform?.[skinName]?.[slotName]?.[attachmentName]||[];
+ if(!keys.length)return [];
+ let prev=keys[0],next=null;
+ if(time<(prev.time||0))return [];
+ for(let i=1;i<keys.length;i++){if(keys[i].time>time){next=keys[i];break;}prev=keys[i];}
+ const size=Math.max((prev.offset||0)+(prev.vertices||[]).length,next?(next.offset||0)+(next.vertices||[]).length:0);
+ const a=Array(size).fill(0),b=Array(size).fill(0);
+ (prev.vertices||[]).forEach((v,i)=>a[i+(prev.offset||0)]=v);
+ if(!next)return a;
+ (next.vertices||[]).forEach((v,i)=>b[i+(next.offset||0)]=v);
+ const f=Math.max(0,Math.min(1,(time-prev.time)/(next.time-prev.time)));
+ return a.map((v,i)=>v+(b[i]-v)*f);
+}
+function drawMesh(att,sprite,slotBone,bones,anim,slot,name,sc,ox,oy){
+ const deform=meshDeform(anim,'default',slot,name,t);
+ const pts=meshPoints(att,slotBone,bones,deform),uv=att.uvs||[],tris=att.triangles||[];
+ const sw=sprite.width,sh=sprite.height;
+ const projected=pts.map(p=>[ox+sc*p[0],oy-sc*p[1]]);
+ for(let k=0;k+2<tris.length;k+=3){
+  const ia=tris[k],ib=tris[k+1],ic=tris[k+2];if(!projected[ia]||!projected[ib]||!projected[ic])continue;
+  const a=projected[ia],b=projected[ib],c=projected[ic];
+  const u=[uv[ia*2]*sw,uv[ia*2+1]*sh],v=[uv[ib*2]*sw,uv[ib*2+1]*sh],w=[uv[ic*2]*sw,uv[ic*2+1]*sh];
+  const det=(v[0]-u[0])*(w[1]-u[1])-(w[0]-u[0])*(v[1]-u[1]);if(Math.abs(det)<1e-8)continue;
+  const A=((b[0]-a[0])*(w[1]-u[1])-(c[0]-a[0])*(v[1]-u[1]))/det;
+  const C=((c[0]-a[0])*(v[0]-u[0])-(b[0]-a[0])*(w[0]-u[0]))/det;
+  const B=((b[1]-a[1])*(w[1]-u[1])-(c[1]-a[1])*(v[1]-u[1]))/det;
+  const D=((c[1]-a[1])*(v[0]-u[0])-(b[1]-a[1])*(w[0]-u[0]))/det;
+  const E=a[0]-A*u[0]-C*u[1],F=a[1]-B*u[0]-D*u[1];
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.lineTo(...c);ctx.closePath();ctx.clip();
+  ctx.setTransform(A,B,C,D,E,F);ctx.drawImage(sprite,0,0);ctx.restore();
+ }
+}
+
+function skinAttachments(data,chosen){
+const merged={};
+for(const sk of data.skins||[]){if(sk.name!=='default'&&sk.name!==chosen)continue;
+ for(const [slot,attachments] of Object.entries(sk.attachments||{}))merged[slot]={...(merged[slot]||{}),...attachments};
+}return merged;
+}
+function render(){const entry=LIBRARY[mon],data=entry.spine,worldBones=world(data,anim,t),
+skin=skinAttachments(data,chosenSkin),slotChanges=(data.animations[anim].slots||{}),s=data.skeleton||{};
+ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.fillStyle='#111b2c';ctx.fillRect(0,0,stage.width,stage.height);
+window.__boneNames=data.bones.map(b=>b.name);
+let sc=Math.min(stage.width*.83/Math.max(1,s.width||600),stage.height*.83/Math.max(1,s.height||600),1),cx=(s.x||0)+(s.width||600)/2,cy=(s.y||0)+(s.height||600)/2,ox=stage.width/2-sc*cx,oy=stage.height/2+sc*cy;
+// Render the same slot order encoded in the original skeleton.
+for(const slot of data.slots){const name=slotAttachment(slotChanges[slot.name],t,slot.attachment);if(!name)continue;const att=(skin[slot.name]||{})[name],b=worldBones[slot.bone];if(!att||!b)continue;if(att.type&&att.type!=='region'&&att.type!=='mesh')continue;const reg=att.path||att.name||name;const sprite=partFor(mon,reg);if(!sprite)continue;
+const col=(slot.color||'ffffffff'),col2=(att.color||'ffffffff');let alpha=1;
+if(col.length===8)alpha*=parseInt(col.slice(6,8),16)/255;
+if(col2.length===8)alpha*=parseInt(col2.slice(6,8),16)/255;
+ctx.globalAlpha=alpha;
+if(att.type==='mesh'){drawMesh(att,sprite,b,worldBones,data.animations[anim],slot.name,name,sc,ox,oy);continue;}const aw=(att.width||sprite.width)/sprite.width*(att.scaleX??1),ah=(att.height||sprite.height)/sprite.height*(att.scaleY??1),angle=(att.rotation||0)*Math.PI/180,co=Math.cos(angle),si=Math.sin(angle),mat=matrices(b.mat,[co*aw,-si*ah,si*aw,co*ah]);const delta=mv(b.mat,[att.x||0,att.y||0]),pos=[b.pos[0]+delta[0],b.pos[1]+delta[1]];
+const proj=(ix,iy)=>{const v=mv(mat,[ix-sprite.width/2,sprite.height/2-iy]);return [ox+sc*(pos[0]+v[0]),oy-sc*(pos[1]+v[1])]};const p0=proj(0,0),px=proj(sprite.width,0),py=proj(0,sprite.height);
+ctx.setTransform((px[0]-p0[0])/sprite.width,(px[1]-p0[1])/sprite.width,(py[0]-p0[0])/sprite.height,(py[1]-p0[1])/sprite.height,p0[0],p0[1]);ctx.drawImage(sprite,0,0);}
+ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;
+}
+function loop(now){const dt=Math.min(.2,Math.max(0,(now-last)/1000));last=now;if(playing)t=(t+dt*speed)%span();render();SEL.seek.value=(t/span());document.getElementById('clock').textContent=t.toFixed(2)+'s / '+span().toFixed(2)+'s';requestAnimationFrame(loop)}
+async function loadRecoveredLibrary(){
+  const status=document.querySelector('header .tag');
+  let loaded=0;
+  try {
+    if(status)status.textContent='Loading recovered data: 0/68';
+    const chunks=await Promise.all(Array.from({length:68},(_,i)=>
+      fetch('assets/library-'+String(i).padStart(3,'0')+'.txt')
+        .then(r=>{if(!r.ok)throw Error('Chunk '+i+' HTTP '+r.status);return r.text()})
+        .then(v=>{loaded++;if(status)status.textContent='Loading recovered data: '+loaded+'/68';return v;})
+    ));
+    LIBRARY=JSON.parse(chunks.join(''));
+    if(status)status.textContent='RECOVERED UNITY + SPINE 3.8';
+    init();
+  } catch(err) {
+    console.error('Could not load recovered animation data',err);
+    if(status)status.textContent='DATA LOAD ERROR: '+err.message;
+  }
+}
+loadRecoveredLibrary();
+</script></body></html>
